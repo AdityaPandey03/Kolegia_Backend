@@ -10,6 +10,15 @@ router.get("/getproducts", (req, res) => {
   });
 });
 
+//Endpoint to get a particular item data(from item_id)
+
+router.get("/product/:item_id", (req, res) => {
+  const { item_id } = req.params;
+  Product.find({ _id: item_id }).then((result) => {
+    res.send(result);
+  });
+});
+
 //Endpoint for listing items that a particular user has posted
 
 router.get("/ownsproduct", (req, res) => {
@@ -37,22 +46,25 @@ router.post("/newrequirement", (req, res) => {
 //Deleting requirement
 
 router.post("/deleterequirement", (req, res) => {
-  Requirement.deleteOne({ /* */}).then((result) => {
+  Requirement.deleteOne({
+    /* */
+  }).then((result) => {
     res.send("deleted");
   });
 });
 
 //Endpoint to get all the requirements on feed
 
-router.get('/getrequirements',(req,res) => {
-    Requirement.find().then(result => {
-        res.send(result);
-    })
-})
+router.get("/getrequirements", (req, res) => {
+  Requirement.find().then((result) => {
+    res.send(result);
+  });
+});
 
 //Endpoint to get all the requirements posted by a specific user
 
-
-
-
-
+router.get("/getownrequirements", (req, res) => {
+  Requirement.find({ required_by: req.query.required_by }).then((result) => {
+    res.send(result);
+  });
+});
