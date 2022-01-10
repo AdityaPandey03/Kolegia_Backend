@@ -5,6 +5,7 @@ let Schema = mongoose.Schema;
 let productSchema = new Schema({
     item_name: String,
     posted_by: String,  //owner of product
+    posted_id: Number,
     item_id: Number,
     price: Number,
     desciption: String,

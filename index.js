@@ -1,9 +1,9 @@
-require("./Authentication/userModel");
+require("./models/userModel");
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const authRoutes = require("./Authentication/authRoute");
+const authRoutes = require("./routes/authRoute");
 const requireAuth = require("./Authentication/requireAuth");
 
 const app = express();

@@ -4,8 +4,8 @@ const Schema = mongoose.Schema;
 
 const requirementSchema = new Schema(
 {
-    req_title: String,
-    required_by: String,
+    title: String,
+    required_by: Number,  //user_id of the person who is posting the requirement
     description: String,
     timestamp: Date
 });
