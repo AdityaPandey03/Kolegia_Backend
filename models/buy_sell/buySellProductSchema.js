@@ -9,7 +9,7 @@ const productSchema = new Schema(
     seller_user_id: Number,
     item_id: Number,
     price: Number,
-    desciption: String,
+    description: String,
     product_image: String,
   },
   {
