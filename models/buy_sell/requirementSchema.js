@@ -1,15 +1,18 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
 const Schema = mongoose.Schema;
 
 const requirementSchema = new Schema(
-{
+  {
     title: String,
-    required_by: Number,  //user_id of the person who is posting the requirement
+    required_by: Number, //user_id of the person who is posting the requirement
     description: String,
-    timestamp: Date
-});
+  },
+  {
+    timestamps: true,
+  }
+);
 
-let Requirement = mongoose.model('requirement', requirementSchema);
+let Requirement = mongoose.model("requirement", requirementSchema);
 
-module.exports = Requirement;
+export default Requirement;

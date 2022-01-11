@@ -1,70 +1,147 @@
-const router = require("express").Router();
-const Product = require("../models/buy_sell/productSchema");
-const Requirement = require("../models/buy_sell/requirementSchema");
+import express from "express";
+import expressAsyncHandler from "express-async-handler";
+import data from "../../data.js";
+
+//models
+import BuySellProduct from "../../models/buy_sell/buySellProductSchema.js";
+import Requirement from "../../models/buy_sell/requirementSchema.js";
+
+const buySellRouter = express.Router();
+
+//endpoint for posting dummy data
+
+buySellRouter.get(
+  "/seed",
+  expressAsyncHandler(async (req, res) => {
+    try {
+      const createdProducts = await BuySellProduct.insertMany(data.products);
+      res.send({ createdProducts });
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  })
+);
 
 //EndPoint for dislaying all products on buying screen
 
-router.get("/getproducts", (req, res) => {
-  Product.find().then((result) => {
-    res.send(result);
-  });
-});
+buySellRouter.get(
+  "/getproducts",
+  expressAsyncHandler(async (req, res) => {
+    try {
+      const products = await BuySellProduct.find({});
+      res.status(200).json(products);
+    } catch (err) {
+      res.status(500).json({ message: "Error in getting products" });
+    }
+  })
+);
 
 //Endpoint to get a particular item data(from item_id)
 
-router.get("/product/:item_id", (req, res) => {
-  const { item_id } = req.params;
-  Product.find({ _id: item_id }).then((result) => {
-    res.send(result);
-  });
-});
+buySellRouter.get(
+  "/getproduct/:id",
+  expressAsyncHandler(async (req, res) => {
+    try {
+      const product = await BuySellProduct.findById(req.params.id);
+      if (product) {
+        res.status(200).json(product);
+      } else {
+        res.status(404).json({ message: "Product not found" });
+      }
+    } catch (err) {
+      res.status(500).json({ message: "Error in getting product" });
+    }
+  })
+);
 
 //Endpoint for listing items that a particular user has posted
 
-router.get("/ownsproduct", (req, res) => {
-  Product.find(
-    { posted_id: req.query.user_id }.then((result) => {
-      res.send(result);
-    })
-  );
-});
+buySellRouter.get(
+  "/userproducts",
+  expressAsyncHandler(async (req, res) => {
+    try {
+      const userProducts = await BuySellProduct.find({
+        seller_user_id: req.body.userId,
+      });
+      if (userProducts) {
+        res.status(200).json(userProducts);
+      } else {
+        res.status(404).json({ message: "did not find user products " });
+      }
+    } catch (err) {
+      res.status(500).json({ message: "Error in fetching user products" });
+    }
+  })
+);
 
 //Endpoint for posting a new requirement in buy/sell
 
-router.post("/newrequirement", (req, res) => {
-  const requirement = new Requirement({
-    title: req.body.title,
-    description: req.body.description,
-    required_by: req.body.required_by,
-    timestamp: req.body.timestamp,
-  });
-  requirement.save().then(() => {
-    res.send(requirement);
-  });
-});
+buySellRouter.post(
+  "/newrequirement",
+  expressAsyncHandler(async (req, res) => {
+    try {
+      const { title, description, required_by } = req.body;
+      const requirement = new Requirement({
+        title,
+        description,
+        required_by,
+      });
+      await requirement.save();
+      res.status(200).json(requirement);
+    } catch (err) {
+      res.status(500).json({ message: "Error in creating new requirement" });
+    }
+  })
+);
 
 //Deleting requirement
 
-router.post("/deleterequirement", (req, res) => {
-  Requirement.deleteOne({
-    /* */
-  }).then((result) => {
-    res.send("deleted");
-  });
-});
+buySellRouter.delete(
+  "/deleterequirement/:id",
+  expressAsyncHandler(async (req, res) => {
+    try {
+      res.status(200).json({ message: "requirement deleted succesfully" });
+      // const user = await User.findById(req.body.userId);
+      // const product = await Requirement.findById(req.params.id)
+      // if(user._id === product.required_by){
+      //   await Requirement.findByIdAndDelete(req.params.id);
+      //   res.status(200).json({message : "requirement deleted succesfully"});
+      // }else{
+      //   res.status(403).json({message : "You are not authorized to delete this item."});
+      // }
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  })
+);
 
 //Endpoint to get all the requirements on feed
-
-router.get("/getrequirements", (req, res) => {
-  Requirement.find().then((result) => {
-    res.send(result);
-  });
-});
+buySellRouter.get(
+  "/getrequirements",
+  expressAsyncHandler(async (req, res) => {
+    try {
+      const requirements = await Requirement.find({});
+      res.status(200).json(requirements);
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  })
+);
 
 //Endpoint to get all the requirements posted by a specific user
 
-router.get("/getownrequirements", (req, res) => {
-  Requirement.find({ required_by: req.query.required_by }).then((result) => {
-    res.send(result);
-  });
-});
+buySellRouter.get(
+  "/userrequirements",
+  expressAsyncHandler(async (req, res) => {
+    try {
+      const userRequirements = await Requirement.find({
+        required_by: req.body.userId,
+      });
+      res.status(200).json(userRequirements);
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  })
+);
+
+export default buySellRouter;
