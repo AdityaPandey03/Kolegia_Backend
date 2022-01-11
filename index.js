@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 
 //routers
 import buySellRouter from "./routes/buy_sell/products.js";
+import lostFoundRouter from "./routes/lost_found/items.js"
 
 const app = express();
 dotenv.config();
@@ -38,6 +39,7 @@ mongoose.connection.on("error", (err) => {
 });
 
 app.use("/api/buysell", buySellRouter);
+app.use("/api/lostfound", lostFoundRouter);
 
 const port = process.env.NODE_ENV ? process.env.PORT : 8000;
 
