@@ -1,5 +1,6 @@
 import express from "express";
 import expressAsyncHandler from "express-async-handler";
+import { isAuth } from "../../Authentication/auth.js";
 import data from "../../data.js";
 
 //models
@@ -26,6 +27,7 @@ buySellRouter.get(
 
 buySellRouter.get(
   "/getproducts",
+  isAuth,
   expressAsyncHandler(async (req, res) => {
     try {
       const products = await BuySellProduct.find({});
@@ -68,6 +70,29 @@ buySellRouter.get(
       } else {
         res.status(404).json({ message: "did not find user products " });
       }
+    } catch (err) {
+      res.status(500).json({ message: "Error in fetching user products" });
+    }
+  })
+);
+
+//post a new item for sale
+
+buySellRouter.post(
+  "/newproduct",
+  expressAsyncHandler(async (req, res) => {
+    try {
+      const { item_name, price, description, product_image, userId } = req.body;
+      const newItem = new BuySellProduct({
+        item_name,
+        seller_user_id: userId,
+        price,
+        description,
+        product_image,
+      });
+
+      await newItem.save();
+      res.status(200).json(newItem);
     } catch (err) {
       res.status(500).json({ message: "Error in fetching user products" });
     }
@@ -145,4 +170,3 @@ buySellRouter.get(
 );
 
 export default buySellRouter;
-

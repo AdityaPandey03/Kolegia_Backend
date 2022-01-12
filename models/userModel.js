@@ -1,48 +1,47 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+// const mongoose = require('mongoose');
+// const bcrypt = require('bcrypt');
+
+import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
     unique: true,
-    required: true
+    required: true,
   },
   password: {
     type: String,
-    required: true
+    required: true,
   },
-  name:{
+  name: {
     type: String,
-    required:true
+    required: true,
   },
-  hostel:{
-    type:String,
-    required:true
+  hostel: {
+    type: String,
+    required: true,
   },
-  roll_number:{ 
-    type:String, 
-    required:true
+  roll_number: {
+    type: String,
+    required: true,
   },
-  contact_number:{ 
+  contact_number: {
     type: Number,
-    required: true
+    required: true,
   },
-  room_number:{ 
+  room_number: {
     type: Number,
-    required: true
+    required: true,
   },
-  profile_img:[
+  profile_img: [
     {
-      img:{
-        type:String,
-        data:Buffer,
-        required:false
-      }
-    }
-  ]
-
-
-
+      img: {
+        type: String,
+        data: Buffer,
+        required: false,
+      },
+    },
+  ],
 });
 
 // userSchema.pre('save', function(next) {
@@ -84,5 +83,5 @@ const userSchema = new mongoose.Schema({
 //   });
 // };
 
-const user=mongoose.model('User', userSchema);
-export default user;
+const User = mongoose.model("user", userSchema);
+export default User;

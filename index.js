@@ -8,7 +8,8 @@ import dotenv from "dotenv";
 
 //routers
 import buySellRouter from "./routes/buy_sell/products.js";
-import lostFoundRouter from "./routes/lost_found/items.js"
+import lostFoundRouter from "./routes/lost_found/items.js";
+import userRouter from "./routes/userRoute.js";
 
 const app = express();
 dotenv.config();
@@ -17,6 +18,7 @@ dotenv.config();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.json());
 // app.use(authRoutes);
 
 const mongodb_uri = process.env.NODE_ENV
@@ -40,6 +42,7 @@ mongoose.connection.on("error", (err) => {
 
 app.use("/api/buysell", buySellRouter);
 app.use("/api/lostfound", lostFoundRouter);
+app.use("/api/user", userRouter);
 
 const port = process.env.NODE_ENV ? process.env.PORT : 8000;
 
