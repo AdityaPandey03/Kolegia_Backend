@@ -1,6 +1,6 @@
 import express from "express";
 import expressAsyncHandler from "express-async-handler";
-import data from "../../data.js";
+import dataLost from "../../dataLostFound.js";
 
 //models
 import lostFoundItem from "../../models/lost_found/itemSchema.js";
@@ -13,7 +13,7 @@ lostFoundRouter.get(
   "/seed",
   expressAsyncHandler(async (req, res) => {
     try {
-      const createdItems = await lostFoundItem.insertMany(data.products);
+      const createdItems = await lostFoundItem.insertMany(dataLost.items);
       res.send({ createdItems });
     } catch (err) {
       res.status(500).json(err);
