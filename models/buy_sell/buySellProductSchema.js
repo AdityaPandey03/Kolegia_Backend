@@ -4,13 +4,22 @@ const Schema = mongoose.Schema;
 
 const productSchema = new Schema(
   {
-    item_name: String,
-    posted_by: String, //owner of product
-    seller_user_id: Number,
-    item_id: Number,
+    itemName: String,
+    postedBy: String, //owner of product
+    sellerUserId: Number,
+    itemId: Number,
     price: Number,
     description: String,
-    product_image: String,
+    productImg: [
+      {
+        img: {
+          type: String,
+          default:
+            "https://res.cloudinary.com/geekysrm/image/upload/v1542221619/default-user.png",
+          required: false,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

@@ -63,7 +63,7 @@ buySellRouter.get(
   expressAsyncHandler(async (req, res) => {
     try {
       const userProducts = await BuySellProduct.find({
-        seller_user_id: req.body.userId,
+        sellerUserId: req.body.userId,
       });
       if (userProducts) {
         res.status(200).json(userProducts);
@@ -76,19 +76,19 @@ buySellRouter.get(
   })
 );
 
-//post a new item for sale
+//post a new item for selling
 
 buySellRouter.post(
   "/newproduct",
   expressAsyncHandler(async (req, res) => {
     try {
-      const { item_name, price, description, product_image, userId } = req.body;
+      const { itemName, price, description, productImage, userId } = req.body;
       const newItem = new BuySellProduct({
-        item_name,
-        seller_user_id: userId,
+        itemName,
+        sellerUserId: userId,
         price,
         description,
-        product_image,
+        productImage,
       });
 
       await newItem.save();
@@ -105,11 +105,11 @@ buySellRouter.post(
   "/newrequirement",
   expressAsyncHandler(async (req, res) => {
     try {
-      const { title, description, required_by } = req.body;
+      const { title, description, requiredById } = req.body;
       const requirement = new Requirement({
         title,
         description,
-        required_by,
+        requiredById,
       });
       await requirement.save();
       res.status(200).json(requirement);
@@ -160,7 +160,7 @@ buySellRouter.get(
   expressAsyncHandler(async (req, res) => {
     try {
       const userRequirements = await Requirement.find({
-        required_by: req.body.userId,
+        requiredById: req.body.userId,
       });
       res.status(200).json(userRequirements);
     } catch (err) {

@@ -21,27 +21,24 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  roll_number: {
+  rollNumber: {
     type: String,
     required: true,
   },
-  contact_number: {
+  contactNumber: {
     type: Number,
     required: true,
   },
-  room_number: {
+  roomNumber: {
     type: Number,
     required: true,
   },
-  profile_img: [
-    {
-      img: {
-        type: String,
-        data: Buffer,
-        required: false,
-      },
-    },
-  ],
+  profileImg: {
+    type: String,
+    default:
+      "https://res.cloudinary.com/geekysrm/image/upload/v1542221619/default-user.png",
+    required: false,
+  },
 });
 
 // userSchema.pre('save', function(next) {
