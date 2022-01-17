@@ -86,4 +86,34 @@ userRouter.post(
   })
 );
 
+//Endpoint for  updating user details
+
+userRouter.post('/updateuser', (req, res) => {
+  req.check('name', ' Name missing').notEmpty();
+  req.check('hostel','Update hostel details').notEmpty();
+  req.check('rollNumber', ' Roll number missing').notEmpty();
+  req.check('roomNumber', ' Room number missing').notEmpty();
+  //profilePic condition to be added @Vivek-Sherkhane
+  req.check('password', 'Password cannot be empty').notEmpty();
+  req.check('contactNumber', 'Phone number is invalid').isMobilePhone(["en-IN"]);
+  const errors = req.validationErrors();
+  let response;
+  if (errors) {
+      response = {
+          success: false,
+          errors,
+      }
+      res.send(response);
+  }
+  else {
+      response = {
+          success: true,
+          errors: null
+      }
+      User.findOneAndUpdate({ email: req.body.email }, { name: req.body.name, password: req.body.password, contactNumber: req.body.contactNumber, hostel: req.body.hostel , roomNumber: req.body.roomNumber,rollNumber: req.body.rollNumber}).then(function (result) {
+          res.send(response);
+      });
+  }
+});
+
 export default userRouter;

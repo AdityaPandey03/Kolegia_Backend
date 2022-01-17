@@ -4,6 +4,7 @@ import dataLost from "../../dataLostFound.js";
 
 //models
 import lostFoundItem from "../../models/lost_found/itemSchema.js";
+import isAuth from "../../Authentication/auth.js";
 
 const lostFoundRouter = express.Router();
 
@@ -21,80 +22,115 @@ lostFoundRouter.get(
   })
 );
 
-//endpoint for displaying all lost items 
+//endpoint for displaying all lost items
 
 lostFoundRouter.get(
-    "/getlostitems",
-    expressAsyncHandler(async (req, res) => {
-      try{
-        const items = await lostFoundItem.find({});
-        res.status(200).json(items);
-      } catch (err) {
-        res.status(500).json({ message: "Error in getting items" });
+  "/getlostitems",
+  expressAsyncHandler(async (req, res) => {
+    try {
+      const items = await lostFoundItem.find({});
+      res.status(200).json(items);
+    } catch (err) {
+      res.status(500).json({ message: "Error in getting items" });
+    }
+  })
+);
+
+//endpoint for displaying lost item by id
+
+lostFoundRouter.get(
+  "/getlostitems/:id",
+  expressAsyncHandler(async (req, res) => {
+    try {
+      const item = await lostFoundItem.findById(req.params.id);
+      if (item) {
+        res.status(200).json(item);
+      } else {
+        res.status(404).json({ message: "Item not found" });
       }
-    })
-  );
+    } catch (err) {
+      res.status(500).json({ message: "Error in getting item" });
+    }
+  })
+);
 
-  //endpoint for displaying lost item by id
+//endpoint for posting new lost item
 
-  lostFoundRouter.get(
-    "/getlostitems/:id",
-    expressAsyncHandler(async (req, res) => {
-      try{
-        const item = await lostFoundItem.findById(req.params.id);
-        if (item) {
-          res.status(200).json(item);
-        } else {
-          res.status(404).json({ message: "Item not found" });
-        }
-      } catch (err) {
-        res.status(500).json({ message: "Error in getting item" });
-      }
-    })
-  );
-
-  //endpoint for posting new lost item
-
-  lostFoundRouter.post(
-    "/postlostitem",
-    expressAsyncHandler(async (req, res) => {
-      try {
-        const { item_name, item_id, id_posted_by, posted_by, item_pictures, question, description } = req.body;
-        const newItem = new lostFoundItem({
-          item_name, 
-          item_id, 
-          id_posted_by,
-          posted_by, 
-          item_pictures, 
-          question, 
-          description,
+lostFoundRouter.post(
+  "/postlostitem",
+  isAuth,
+  uploadS3.array("itemPictures"),
+  expressAsyncHandler(async (req, res) => {
+    try {
+      const { itemName, itemId, postedById, postedBy, question, description } =
+        req.body;
+      var itemPictures = [];
+      if (req.files.length > 0) {
+        itemPictures = req.files.map((file) => {
+          return { img: file.key };
         });
-        await newItem.save();
-        res.status(200).json(newItem);
-      } catch (err) {
-        res.status(500).json({ message: "Error in posting your lost item" });
       }
-    })
-  );
 
-  //endpoint for all tickets raised by a user in lost found section
+      //saving data to db
 
-  lostFoundRouter.get(
-    "/mylostitems",
-    expressAsyncHandler(async (req, res) => {
-      try {
-        const userItems = await lostFoundRouter.find({
-          id_posted_by: req.body.userId,
+      const newItem = await lostFoundItem.create({
+        itemName,
+        itemId,
+        postedById,
+        postedBy,
+        question,
+        description,
+        itemPictures: itemPictures,
+      });
+      newItem.save((error, item) => {
+        if (error) return res.status(400).json({ error });
+        if (item) return res.status(200).json({ item });
+      });
+    } catch (err) {
+      res.status(500).json({ message: "Error in posting your lost item" });
+    }
+  })
+);
+
+//endpoint for all tickets raised by a user in lost found section
+
+lostFoundRouter.get(
+  "/mylostitems",
+  expressAsyncHandler(async (req, res) => {
+    try {
+      const userItems = await lostFoundRouter.find({
+        id_posted_by: req.body.userId,
+      });
+      if (userItems) {
+        res.status(200).json(userItems);
+      } else {
+        res.status(404).json({ message: "Not founding your item " });
+      }
+    } catch (err) {
+      res.status(500).json({ message: "Error in fetching user's lost item" });
+    }
+  })
+);
+
+//endpoint for deleting an item that's found
+
+lostFoundRouter.post(
+  "/deleteitem",
+  expressAsyncHandler(async (req, res) => {
+    try {
+      const { itemId } = req.body;
+      const deleteitem = await lostFoundItem.findOneAndDelete({ _id: itemId });
+      if (deleteitem) {
+        res.status(200).json({
+          body: req.body,
         });
-        if (userItems) {
-          res.status(200).json(userItems);
-        } else {
-          res.status(404).json({ message: "Not founding your item " });
-        }
-      } catch (err) {
-        res.status(500).json({ message: "Error in fetching user's lost item" });
+      } else{
+        res.status(404).json({message:"No item to delete"});
       }
-    })
-  );
+    } catch (err) {
+      res.status(500).json({ message: "Error in deleting" });
+    }
+  })
+);
 
-  export default lostFoundRouter;
+export default lostFoundRouter;

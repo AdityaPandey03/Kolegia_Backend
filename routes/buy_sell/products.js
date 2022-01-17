@@ -6,6 +6,7 @@ import data from "../../data.js";
 //models
 import BuySellProduct from "../../models/buy_sell/buySellProductSchema.js";
 import Requirement from "../../models/buy_sell/requirementSchema.js";
+import Notification from "../../models/buy_sell/notificationSchema.js";
 
 const buySellRouter = express.Router();
 
@@ -168,5 +169,48 @@ buySellRouter.get(
     }
   })
 );
+
+//Endpoint to get all the notifications
+
+buySellRouter.get('/notifications', (req, res) => {
+	const userName = req.query.userName;
+	Notification.find({ targetUsername: userName })
+		.then(result => {
+			res.send(result.reverse());
+		});
+})
+
+//endpoint if user is interested in a particular notification(product)
+
+buySellRouter.post('/interest', (req, res) => {
+	const data = req.body;
+	const notification = new Notification({
+		...data
+	});
+	Notification.findOne({
+		itemId: data.itemId,
+		type: data.type,
+		userName: data.userName,
+	}).then(result => {
+		if (!result) {
+			// If there are no notifications currently
+			if (data.status === 'Interested') {
+				notification.save().then(result => {
+				});
+			}
+		} else {
+			// Remove the notification if already present
+			if (data.status === 'Not Interested') {
+				Notification.findOneAndDelete({
+					itemId: data.itemId,
+					type: data.type,
+					userName: data.userName
+				}).then(result => {
+				});
+			}
+		}
+		res.send('ok');
+	})
+});
 
 export default buySellRouter;

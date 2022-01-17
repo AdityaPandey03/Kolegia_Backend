@@ -16,3 +16,5 @@ export const isAuth = (req, res, next) => {
     res.status(400).json({ message: "You must be logged in" });
   }
 };
+
+export default isAuth;

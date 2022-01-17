@@ -1,9 +1,11 @@
-let mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 let Schema = mongoose.Schema;
 
 let notifSchema = new Schema({
     userName: String,
+    targetUsername: String,
+    type: String,
     whetherSeen: Boolean,
     itemId: Number,
     itemName: String,
@@ -13,4 +15,4 @@ let notifSchema = new Schema({
 
 let Notification = mongoose.model("notifications", notifSchema);
 
-module.exports = Notification;
+export default Notification;
