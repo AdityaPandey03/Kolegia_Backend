@@ -4,9 +4,16 @@ const Schema = mongoose.Schema;
 
 const requirementSchema = new Schema(
   {
-    title: String,
-    requiredById: Number, //user_id of the person who is posting the requirement
-    description: String,
+    title: {
+      type: String,
+    },
+    requiredById: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
+    },
+    description: {
+      type: String,
+    },
   },
   {
     timestamps: true,

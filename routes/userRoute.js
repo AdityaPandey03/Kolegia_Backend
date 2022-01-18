@@ -3,6 +3,8 @@ import User from "../models/userModel.js";
 import expressAsyncHandler from "express-async-handler";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import upload from "../utils/multer.js";
+import { cloudinary2 } from "../utils/cloudinary.js";
 
 const userRouter = express.Router();
 
@@ -48,26 +50,35 @@ userRouter.post(
 
 userRouter.post(
   "/signup",
+  upload.single("image"),
   expressAsyncHandler(async (req, res) => {
     try {
+      // console.log(req.body);
+      const { name, email, hostel, rollNumber, roomNumber, contactNumber } =
+        req.body;
+      const result = await cloudinary2.uploader.upload(req.file.path);
+      console.log(result);
       const user = new User({
-        name: req.body.name,
-        email: req.body.email,
+        name,
+        email,
         password: bcrypt.hashSync(req.body.password, 8),
-        hostel: req.body.hostel,
-        roll_number: req.body.roll_number,
-        room_number: req.body.room_number,
-        contact_number: req.body.contact_number,
+        hostel,
+        rollNumber,
+        roomNumber,
+        contactNumber,
+        cloudinaryId: result.public_id,
+        profileImg: result.secure_url,
       });
       const createdUser = await user.save();
+      console.log(createdUser);
       const payload = {
         _id: createdUser._id,
         name: createdUser.name,
         email: createdUser.email,
         hostel: createdUser.hostel,
-        roll_number: createdUser.roll_number,
-        room_number: createdUser.room_number,
-        contact_number: createdUser.contact_number,
+        rollNumber: createdUser.rollNumber,
+        roomNumber: createdUser.roomNumber,
+        contactNumber: createdUser.contactNumber,
       };
       jwt.sign(
         payload,
