@@ -39,6 +39,9 @@ const userSchema = new mongoose.Schema({
       "https://res.cloudinary.com/geekysrm/image/upload/v1542221619/default-user.png",
     required: false,
   },
+  cloudinaryId: {
+    type: String,
+  },
 });
 
 // userSchema.pre('save', function(next) {

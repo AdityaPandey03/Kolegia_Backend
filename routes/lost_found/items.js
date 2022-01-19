@@ -1,7 +1,8 @@
 import express from "express";
 import expressAsyncHandler from "express-async-handler";
 import dataLost from "../../dataLostFound.js";
-
+import upload from "../../utils/multer.js";
+import { cloudinary2 } from "../../utils/cloudinary.js";
 //models
 import lostFoundItem from "../../models/lost_found/itemSchema.js";
 import isAuth from "../../Authentication/auth.js";
@@ -58,39 +59,69 @@ lostFoundRouter.get(
 
 lostFoundRouter.post(
   "/postlostitem",
-  isAuth,
-  uploadS3.array("itemPictures"),
+  upload.array("imageList"),
   expressAsyncHandler(async (req, res) => {
     try {
-      const { itemName, itemId, postedById, postedBy, question, description } =
-        req.body;
-      var itemPictures = [];
-      if (req.files.length > 0) {
-        itemPictures = req.files.map((file) => {
-          return { img: file.key };
-        });
-      }
+      const { itemName, userId, postedBy, question, description } = req.body;
 
-      //saving data to db
+      const result = await Promise.all(
+        req.files.map(async (file) => {
+          const res = await cloudinary2.uploader.upload(file.path);
+          return { img: res.secure_url, cloudinaryId: res.public_id };
+        })
+      );
 
-      const newItem = await lostFoundItem.create({
+      const newItem = new lostFoundItem({
         itemName,
-        itemId,
-        postedById,
+        postedById: userId,
         postedBy,
+        itemPictures: result,
         question,
         description,
-        itemPictures: itemPictures,
       });
-      newItem.save((error, item) => {
-        if (error) return res.status(400).json({ error });
-        if (item) return res.status(200).json({ item });
-      });
+
+      await newItem.save();
+      res.status(200).json(newItem);
     } catch (err) {
       res.status(500).json({ message: "Error in posting your lost item" });
     }
   })
 );
+
+// lostFoundRouter.post(
+//   "/postlostitem",
+//   isAuth,
+//   upload.array("itemPictures"),
+//   expressAsyncHandler(async (req, res) => {
+//     try {
+//       const { itemName, itemId, postedById, postedBy, question, description } = req.body;
+//       var itemPictures = [];
+//       if (req.files.length > 0) {
+//         itemPictures = req.files.map((file) => {
+//           return { img: file.key };
+//         });
+//       }
+
+//       //saving data to db
+
+//       const newItem = await lostFoundItem.create({
+//         itemName,
+//         itemId,
+//         postedById,
+//         postedBy,
+//         question,
+//         description,
+//         itemPictures: itemPictures,
+//       });
+//       newItem.save((error, item) => {
+//         if (error) return res.status(400).json({ error });
+//         if (item) return res.status(200).json({ item });
+//       });
+//     } catch (err) {
+//       res.status(500).json({ message: "Error in posting your lost item" });
+//     }
+//   })
+// );
 
 //endpoint for all tickets raised by a user in lost found section
 
@@ -98,13 +129,13 @@ lostFoundRouter.get(
   "/mylostitems",
   expressAsyncHandler(async (req, res) => {
     try {
-      const userItems = await lostFoundRouter.find({
-        id_posted_by: req.body.userId,
+      const userItems = await lostFoundItem.find({
+        postedById: req.body.userId,
       });
       if (userItems) {
         res.status(200).json(userItems);
       } else {
-        res.status(404).json({ message: "Not founding your item " });
+        res.status(404).json({ message: "Not able to find your item " });
       }
     } catch (err) {
       res.status(500).json({ message: "Error in fetching user's lost item" });
@@ -132,5 +163,4 @@ lostFoundRouter.post(
     }
   })
 );
-
 export default lostFoundRouter;

@@ -2,6 +2,8 @@ import express from "express";
 import expressAsyncHandler from "express-async-handler";
 import { isAuth } from "../../Authentication/auth.js";
 import data from "../../data.js";
+import upload from "../../utils/multer.js";
+import { cloudinary2 } from "../../utils/cloudinary.js";
 
 //models
 import BuySellProduct from "../../models/buy_sell/buySellProductSchema.js";
@@ -28,7 +30,6 @@ buySellRouter.get(
 
 buySellRouter.get(
   "/getproducts",
-  isAuth,
   expressAsyncHandler(async (req, res) => {
     try {
       const products = await BuySellProduct.find({});
@@ -81,15 +82,23 @@ buySellRouter.get(
 
 buySellRouter.post(
   "/newproduct",
+  upload.array("imageList"),
   expressAsyncHandler(async (req, res) => {
     try {
-      const { itemName, price, description, productImage, userId } = req.body;
+      const { itemName, price, description, userId, postedBy } = req.body;
+      const result = await Promise.all(
+        req.files.map(async (file) => {
+          const res = await cloudinary2.uploader.upload(file.path);
+          return { img: res.secure_url, cloudinaryId: res.public_id };
+        })
+      );
       const newItem = new BuySellProduct({
         itemName,
         sellerUserId: userId,
         price,
         description,
-        productImage,
+        itemImages: result,
+        postedBy,
       });
 
       await newItem.save();
