@@ -145,7 +145,7 @@ lostFoundRouter.get(
 
 //endpoint for deleting an item that's found
 
-lostFoundRouter.post(
+lostFoundRouter.delete(
   "/deleteitem",
   expressAsyncHandler(async (req, res) => {
     try {
@@ -163,4 +163,6 @@ lostFoundRouter.post(
     }
   })
 );
+
+
 export default lostFoundRouter;
