@@ -17,6 +17,7 @@ const RaisedHands = require("./routes/RaisedHands");
 const Requirements = require("./routes/Requirements");
 const User = require("./routes/Users");
 
+
 // Connect to MongoDB
 mongoose
   .connect(config.db_url, config.db_config)
