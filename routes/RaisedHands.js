@@ -7,6 +7,8 @@ const { Get_or_Create_ChatRoom } = require("../controllers/Chats");
 const { lostFoundItems } = require("../models/LostFoundItem");
 const messages = require("../config/messages");
 const { raisedHands } = require("../models/RaisedHands");
+const { users } = require("../models/Users");
+const { send_push_to_user } = require("../controllers/PushNotifications");
 
 // Initialize router
 const router = express.Router();
@@ -53,6 +55,17 @@ router.post("/raise-hand-on-an-item", UserAuth, async (req, res) => {
     };
     payload.product_details = product_details;
 
+    let notification_payload = {
+      title: `Response Raised`,
+      body: `${req.body.user_details.name} has raised a hand on your product with title ${product.name}`,
+      imageUrl: process.env.default_product_image,
+    };
+
+    if (product.files.length > 0)
+      notification_payload.imageUrl = product.files[0].uri;
+
+    await send_push_to_user(product.posted_by, notification_payload);
+
     // return the raised hand
     return res.send({
       raisedHand: payload,
@@ -71,9 +84,11 @@ router.get("/get-raised-responses", UserAuth, async (req, res) => {
     // Get all raised hands for this user by the field of product_owner_id in raisedHands model
     const raisedHandsList = await raisedHands.aggregate([
       // Match product_owner_id with the user_id
+      // and raised_by is not equal to the user_id
       {
         $match: {
           product_owner_id: user_id,
+          raised_by: { $ne: user_id },
         },
       },
       // Join with the product model
@@ -124,7 +139,55 @@ router.get("/get-raised-responses", UserAuth, async (req, res) => {
       message: "Successfully fetched raised hands",
     });
   } catch (error) {
-    return res.status(500).send("Error");
+    return res.status(500).send({ message: messages.serverError });
+  }
+});
+
+// Get all products on which I raised hand
+router.get("/get-raised_by-me-responses", UserAuth, async (req, res) => {
+  try {
+    let user_id = req.body.user_details._id;
+
+    // Get all raised hands for this user by the field of product_owner_id in raisedHands model
+    const raisedHandsList = await raisedHands.aggregate([
+      // Match product_owner_id with the user_id
+      // and raised_by is not equal to the user_id
+      {
+        $match: {
+          raised_by: user_id,
+        },
+      },
+      // Join with the product model
+      {
+        $lookup: {
+          from: "lostfounditems",
+          localField: "product_id",
+          foreignField: "_id",
+          as: "product_details",
+        },
+      },
+      // unwind the product_details array
+      {
+        $unwind: "$product_details",
+      },
+      {
+        $project: {
+          _id: 1,
+          product_id: 1,
+          raised_by: 1,
+          raised_datetime: 1,
+          note: 1,
+          product_details: 1,
+        },
+      },
+    ]);
+
+    return res.send({
+      raised_hands: raisedHandsList,
+      message: "Successfully fetched raised hands by you.",
+    });
+  } catch (error) {
+    return res.status(500).send({ message: messages.serverError });
   }
 });
 
@@ -168,12 +231,23 @@ router.post("/accept-raised-hand", UserAuth, async (req, res) => {
       message,
     });
 
+    // get the details of the person who raised hands
+    const raised_by_details = await users.findById(raised_by);
+    if (!raised_by_details)
+      return res.status(400).send({ message: "User not Found" });
+
     // Delete the raised hand request as soon as it is accepted
     await raisedHand.delete();
 
     // return the chat room
     return res.send({
       room_id: getChatRoom.room._id,
+      raised_by_details: {
+        _id: raised_by,
+        name: raised_by_details.name,
+        profile_picture: raised_by_details.profile_picture,
+        phone: raised_by_details.phone,
+      },
       message: "Accepted the Raised hand request",
     });
   } catch (error) {

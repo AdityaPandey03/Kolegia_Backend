@@ -19,7 +19,7 @@ const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Get buy-sell feed in batches of 10, according to the time they were posted
-router.get("/get-buy-sell-feed", async (req, res) => {
+router.get("/get-buy-sell-feed", UserAuth, async (req, res) => {
   try {
     // Get the products in batches of 10 after this _id
     let after = req.query?.after
@@ -61,16 +61,8 @@ router.get("/get-buy-sell-feed", async (req, res) => {
       {
         $unwind: "$posted_by_details",
       },
-      // Keep only name in posted_by field and other required fields
       {
-        $project: {
-          _id: 1,
-          name: 1,
-          price: 1,
-          description: 1,
-          files: 1,
-          posted_on: 1,
-          posted_by: 1,
+        $addFields: {
           owner_details: {
             _id: "$posted_by_details._id",
             name: "$posted_by_details.name",
@@ -78,6 +70,13 @@ router.get("/get-buy-sell-feed", async (req, res) => {
             hostel: "$posted_by_details.hostel",
             room_number: "$posted_by_details.room_number",
           },
+        },
+      },
+      // remove unnecessary fields
+      {
+        $project: {
+          __v: 0,
+          posted_by_details: 0,
         },
       },
     ]);
@@ -90,7 +89,7 @@ router.get("/get-buy-sell-feed", async (req, res) => {
 });
 
 // Get Product details
-router.get("/get-buysell-product-details", async (req, res) => {
+router.get("/get-buysell-product-details", UserAuth, async (req, res) => {
   try {
     // check if product_id is present in query
     if (!req.query.product_id)
@@ -114,6 +113,7 @@ router.get("/get-buysell-product-details", async (req, res) => {
       profile_picture: 1,
       hostel: 1,
       room_number: 1,
+      phone: 1,
     });
     if (owner) product_details.owner_details = owner.toObject();
 

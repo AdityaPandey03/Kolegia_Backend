@@ -9,6 +9,7 @@ const {
   get_login_payload_data,
   get_auth_token,
   get_encoded_data,
+  get_dashboard_stats,
 } = require("../controllers/Users");
 const messages = require("../config/messages");
 const { resetRequests } = require("../models/ResetPassword");
@@ -81,8 +82,17 @@ router.post("/login", ValidateLogin, async (req, res) => {
 // Login with Google
 router.post("/google-login", async (req, res) => {
   try {
-    const verifyResponse = await VerifyTokenID(req.body.ID_Token);
-    const email = verifyResponse.getPayload().email;
+    const verifyResponse = await VerifyTokenID(req.body.id_token);
+
+    if (!verifyResponse.ok) {
+      return res
+        .status(500)
+        .send({ message: "Invalid ID Token", isLoggedIn: false });
+    }
+
+    const user_details = verifyResponse.ticket.getPayload();
+
+    const email = user_details?.email;
 
     if (!email)
       return res
@@ -94,17 +104,18 @@ router.post("/google-login", async (req, res) => {
     });
 
     if (!user)
-      return res.status(404).send({
+      return res.status(200).send({
         message: messages.fillRestDetails,
         user_details: {
-          email: req.body.user.email,
-          name: req.body.user.name,
-          profile_picture: req.body.user.photo,
+          email: user_details.email,
+          name: user_details.name,
+          profile_picture: user_details.picture,
         },
         isLoggedIn: false,
         partial_login: true,
       });
 
+    // If request body has push_notification_token, update it in the database
     if (req.body.push_notification_token) {
       user.push_notification_token = req.body.push_notification_token;
       await user.save();
@@ -220,7 +231,7 @@ router.delete("/logout", UserAuth, async (req, res) => {
     if (!user)
       return res.status(404).send({ message: messages.accountMissing });
 
-    user.PushNotificationToken = "";
+    user.push_notification_token = "";
     await user.save();
 
     return res.send({ message: messages.loggedtOut });
@@ -340,7 +351,7 @@ router.post("/send-email-register-otp", async (req, res) => {
     const user = await users.findOne({ email: req.body.email });
     if (user)
       return res.status(401).send({
-        response: messages.associatedAccount,
+        message: messages.associatedAccount,
       });
 
     // Create new OTP instance
@@ -371,7 +382,7 @@ router.post("/send-email-register-otp", async (req, res) => {
     });
   } catch (error) {
     return res.status(500).send({
-      response: messages.serverError,
+      message: messages.serverError,
     });
   }
 });
@@ -418,7 +429,7 @@ router.post("/send-forgot-password-otp", async (req, res) => {
     });
   } catch (error) {
     return res.status(500).send({
-      response: messages.serverError,
+      message: messages.serverError,
     });
   }
 });
@@ -479,6 +490,10 @@ router.post("/reset-password", async (req, res) => {
     // Delete the request
     await check_request.delete();
 
+    // If request body has push_notification_token, update it in the database
+    if (req.body.push_notification_token)
+      user.push_notification_token = req.body.push_notification_token;
+
     // Save the user
     await user.save();
 
@@ -491,6 +506,17 @@ router.post("/reset-password", async (req, res) => {
       message: "Login Successfull",
       isLoggedIn: true,
     });
+  } catch (error) {
+    return res.status(500).send({ message: messages.serverError });
+  }
+});
+
+// Get dashboard Stats
+router.get("/get-dashboard-statistics", UserAuth, async (req, res) => {
+  try {
+    const statsData = await get_dashboard_stats(req);
+
+    return res.send({ stats: statsData, message: "Dashboard Statistics" });
   } catch (error) {
     return res.status(500).send({ message: messages.serverError });
   }
