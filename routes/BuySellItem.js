@@ -22,9 +22,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.get("/get-buy-sell-feed", UserAuth, async (req, res) => {
   try {
     // Get the products in batches of 10 after this _id
-    let after = req.query?.after
-      ? mongoose.Types.ObjectId(req.query.after)
-      : null;
+    let after = req.query?.after ? mongoose.Types.ObjectId(req.query.after) : null;
 
     // get data in count of
     let count = req.query?.count || 10;
@@ -102,8 +100,7 @@ router.get("/get-buysell-product-details", UserAuth, async (req, res) => {
     const product = await buySellItems.findById(product_id, {
       __v: 0,
     });
-    if (!product)
-      return res.status(404).send({ message: messages.product_not_found });
+    if (!product) return res.status(404).send({ message: messages.product_not_found });
 
     let product_details = product.toObject();
 
@@ -145,10 +142,7 @@ router.post(
       // If there are files, upload them to Cloudinary
       if (req.body.files.length > 0) {
         // Upload multiple files to Cloudinary
-        const uploaded_files = await UploadFilesForPayload(
-          req.body.files,
-          destination
-        );
+        const uploaded_files = await UploadFilesForPayload(req.body.files, destination);
 
         // Assign the files array to the newProduct.files
         newProduct.files = uploaded_files;
@@ -186,8 +180,7 @@ router.put(
 
       // Check if product exists
       const product = await buySellItems.findById(req.body.product_id);
-      if (!product)
-        return res.status(404).send({ message: messages.product_not_found });
+      if (!product) return res.status(404).send({ message: messages.product_not_found });
 
       // Check if user is the product's owner
       if (product.posted_by.toString() !== req.body.user_details._id.toString())
@@ -195,7 +188,7 @@ router.put(
 
       // Update product
       // map through the body and assign the new values to the product
-      Object.keys(req.body).map((key) => {
+      Object.keys(req.body).map(key => {
         if (key !== "files") product[key] = req.body[key];
       });
 
@@ -215,10 +208,7 @@ router.put(
       // If files array is not empty, upload them to Cloudinary and push it to the product.files array
       if (toUpload > 0) {
         // Upload multiple files to Cloudinary
-        const uploaded_files = await UploadFilesForPayload(
-          req.body.files,
-          destination
-        );
+        const uploaded_files = await UploadFilesForPayload(req.body.files, destination);
 
         // Assign the files array to the newProduct.files
         product.files = [...product.files, ...uploaded_files];
@@ -231,7 +221,7 @@ router.put(
 
         // Remove the files from the product.files array whose _id is in the req.body.to_be_deleted array
         product.files = product.files.filter(
-          (file) => !req.body.to_be_deleted.includes(file.public_id)
+          file => !req.body.to_be_deleted.includes(file.public_id)
         );
       }
 
@@ -253,17 +243,14 @@ router.delete("/delete-buy-sell-product", UserAuth, async (req, res) => {
 
     // check if Product exists
     const product = await buySellItems.findById(req.body.product_id);
-    if (!product)
-      return res.status(404).send({ message: messages.product_not_found });
+    if (!product) return res.status(404).send({ message: messages.product_not_found });
 
     // check if user is the product's owner
     if (product.posted_by.toString() !== req.body.user_details._id.toString())
       return res.status(401).send({ message: messages.unauthorized });
 
     // Delete folder from cloudinary
-    await DeleteAFolder(
-      `Kolegia/users/${product.posted_by}/buy-sell/${product._id}`
-    );
+    await DeleteAFolder(`Kolegia/users/${product.posted_by}/buy-sell/${product._id}`);
 
     // Delete product
     await product.delete();
@@ -292,6 +279,68 @@ router.get("/get-own-buy-sell-list", UserAuth, async (req, res) => {
     return res.send({
       Products: user_products,
       message: "List of items posted by user for selling.",
+    });
+  } catch (error) {
+    return res.status(500).send({ message: messages.serverError });
+  }
+});
+
+// Search for Buy-Sell items
+router.get("/search-buy-sell-products", UserAuth, async (req, res) => {
+  try {
+    if (!req.query?.search) return res.status(400).send({ message: "Search Query is Required" });
+
+    // Search for items with the given search query
+    const buy_sell_list = await buySellItems.aggregate([
+      {
+        // Match the products with the filter
+        $match: {
+          $text: {
+            $search: req.query.search,
+          },
+        },
+      },
+      // sort them in descending order of _id
+      {
+        $sort: {
+          _id: -1,
+        },
+      },
+      // Replace posted_by field with the user's name
+      {
+        $lookup: {
+          from: "users",
+          localField: "posted_by",
+          foreignField: "_id",
+          as: "posted_by_details",
+        },
+      },
+      {
+        $unwind: "$posted_by_details",
+      },
+      {
+        $addFields: {
+          owner_details: {
+            _id: "$posted_by_details._id",
+            name: "$posted_by_details.name",
+            profile_picture: "$posted_by_details.profile_picture",
+            hostel: "$posted_by_details.hostel",
+            room_number: "$posted_by_details.room_number",
+          },
+        },
+      },
+      // remove unnecessary fields
+      {
+        $project: {
+          __v: 0,
+          posted_by_details: 0,
+        },
+      },
+    ]);
+
+    return res.send({
+      products: buy_sell_list,
+      message: "Search Results for Buy-Sell items",
     });
   } catch (error) {
     return res.status(500).send({ message: messages.serverError });
